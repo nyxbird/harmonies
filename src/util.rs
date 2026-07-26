@@ -40,6 +40,8 @@ pub fn color_cyan() -> String {String::from(if use_color() {"\x1b[36m"} else {""
 pub fn color_reset() -> String {String::from(if use_color() {"\x1b[0m"} else {""})}
 pub fn color_under() -> String {String::from(if use_color() {"\x1b[4m"} else {""})}
 
+pub fn clear() -> String {"\x1b[2J".to_string()}
+
 //impl Hex {
 //	pub fn draw(&self) {
 //		print!("{}{}", match self {
