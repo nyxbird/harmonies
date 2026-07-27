@@ -37,7 +37,7 @@ pub fn draw(g: &Game, m: u8) {
 	let mut sum = 0;
 	for (_, &c) in g.counts.iter() {sum += c;}
 	margin(m);
-	print!("rem: {} (", sum);
+	print!("score: {}; rem: {} (", g.score, sum);
 	for (i, (t, c)) in g.counts.iter().enumerate() {
 		print!("{}{} {}", t.color().ansi(), c, t.show());
 		if i != g.counts.len()-1 {print!(", ");}
@@ -71,9 +71,6 @@ pub fn draw(g: &Game, m: u8) {
 		println!();
 	}
 	margin(m);
-	//for _ in 0..9 {print!("─");}
-	//print!("┴───┬");
-	//for _ in 0..11*g.shop.len()-1 {print!("─");}
 	for i in 0..11*g.shop.len()+13 {
 		let x = (if i == 9 {2} else {0}) + (if i == 2*g.grid.w+3 {1} else {0});
 		print!("{}", ["─", "┬", "┴", "┼"][x]);

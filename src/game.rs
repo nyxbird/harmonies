@@ -13,6 +13,7 @@ pub struct Game {
 	pub grid: Grid,
 	pub owned: Vec<Card>,
 	pub score: u32,
+	pub done: bool,
 }
 
 use Tile::*;
@@ -41,7 +42,7 @@ impl Game {
 			deck, shop,
 			grid: Grid::new_rect(5, 5),
 			owned: Vec::new(),
-			score: 0
+			score: 0, done: false
 		};
 		g.new_pools();
 		g

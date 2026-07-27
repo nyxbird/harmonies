@@ -149,21 +149,34 @@ impl Grid {
 		let offs = vec![(-1, -1), (-1, 1), (0, -2), (0, 0), (0, 2)];
 		let mut map = Vec::new();
 		for i in 0..5 {
-			map.push((offs[i], c.reqs[i]));
+			if c.reqs[i].t != Empty {map.push((offs[i], c.reqs[i]))}
 		}
 		for (p, _) in map.iter_mut() {
 			p.0 -= offs[c.loc].0 as isize;
 			p.1 -= offs[c.loc].1 as isize;
 		}
 		// try each possible rotation and cell
-		for _ in 0..6 {
-			let dx2 = x*2+(self.h as isize%2);
+		for r in 0..6 {
+			let dx2 = x*2+(y as isize%2);
 			let Some(Hex{cube: false,..}) = self.get2x(y, dx2) else {continue};
 			let mut yum = true;
 			for &(p, h) in map.iter() {
-				if h.t != Empty && self.get2x(y+p.0, dx2+p.1) != Some(h) {
-					yum = false; break;
+				if self.get2x(y+p.0, dx2+p.1) != Some(Hex{cube: false,..h}) {
+					// TODO: fix broken card matching
+					print!("![{}{}{}]{}/{} ", r, y+p.0, dx2+p.1, 
+						if let Some(h0) = self.get2x(y+p.0, dx2+p.1) {h0.show()} else {"??".to_string()},		 
+					h.show());
+					yum = false;// break;
 				}
+				else {
+					print!("({}{}{}){}/{} ", r, y+p.0, dx2+p.1, 
+						if let Some(h0) = self.get2x(y+p.0, dx2+p.1) {h0.show()} else {"??".to_string()},		 
+					h.show());
+				}
+				//if let Some(h0) = self.get2x(y+p.0, dx2+p.1) && h0.t == h.t && h0.h == h.h {}
+				//else {
+				//	yum = false; break;
+				//}
 			}
 			if yum {return true}
 			// rotate

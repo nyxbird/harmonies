@@ -67,6 +67,7 @@ pub fn ask(g: &mut Game, m: u8) -> Option<()> {
 		else if s[0] >= 'a' {
 			let c = &mut g.shop[s[0] as usize-'a' as usize];
 			if g.grid.valid_cube(y as isize, x as isize, c) {
+				g.grid.hexes[y][x].cube = true;
 				g.score += (*c).score[(*c).cubes];
 				(*c).cubes += 1;
 				if (*c).cubes >= (*c).score.len() {
