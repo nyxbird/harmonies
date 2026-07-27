@@ -3,85 +3,102 @@ use crate::util::{*, Color::*};
 use crate::card::*;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Hex {
-	// Blank is a non-space for grid shaping
-	Blank, #[default] Empty,
-	Wood, TwoWood,
-	Leaf, Tree, TwoTree,
-	Rock, TwoRock, ThreeRock,
-	Brick, Building,
-	Field,
-	Water
+pub enum Tile {
+	#[default] Empty,
+	Wood, Leaf,
+	Rock, Brick,
+	Field, Water
 }
 
-use Hex::*;
+impl Tile {
+	pub fn color(&self) -> Color {
+		use crate::util::Color::*;
+		match self {
+			Empty => Norm,
+			Wood => Magenta, Leaf => Green,
+			Rock => Cyan, Brick => Red,
+			Field => Yellow, Water => Blue
+		}
+	}
+
+	pub fn symbol(&self) -> char {
+		match self {
+			Empty => '-',
+			Wood => 't', Leaf => 'l',
+			Rock => 'r', Brick => 'b',
+			Field => 'f', Water => 'w'
+		}
+	}
+
+	pub fn cube(&self) -> char {
+		match self {
+			Empty => '-',
+			Wood => 'T', Leaf => 'L',
+			Rock => 'R', Brick => 'B',
+			Field => 'F', Water => 'W'
+		}
+	}
+
+	pub fn show(&self) -> String {
+		format!("{}{}{}", self.color().ansi(), self.symbol(), Color::Norm.ansi())
+	}
+}
+
+use Tile::*;
+
+#[derive(Default, Clone, Copy, PartialEq, Eq)]
+pub struct Hex {
+	pub t: Tile,
+	pub h: u8,
+	pub cube: bool
+}
 
 impl Hex {
-	// stack another hex on this one
-	pub fn stack(&self, top: &Hex) -> Option<Hex> {
-		match (*self, *top) {
-			(Empty, x) => Some(x),
-			(Wood, Wood) => Some(TwoWood),
-			(Wood, Leaf) => Some(Tree),
-			(TwoWood, Leaf) => Some(TwoTree),
-			(Rock, Rock) => Some(TwoRock),
-			(TwoRock, Rock) => Some(ThreeRock),
-			(Wood|Rock|Brick, Brick) => Some(Building),
+	pub fn stack(&self, t: &Tile) -> Option<Hex> {
+		match (*self, *t) {
+			(Hex{cube:true,..}, _) => None,
+			(Hex{t:Empty,..}, t) => Some(Hex::new(t, 1)),
+			(Hex{t:Wood, h:1,..}, Wood) => Some(Hex::new(Wood, 2)),
+			(Hex{t:Wood, h:x@(1|2),..}, Leaf) => Some(Hex::new(Leaf, x+1)),
+			(Hex{t:Rock, h:x@(1|2),..}, Rock) => Some(Hex::new(Rock, x+1)),
+			(Hex{t:(Wood|Rock|Brick), h:1,..}, Brick) => Some(Hex::new(Brick, 2)),
 			_ => None
 		}
 	}
 
-	pub fn color(&self) -> Color {
-		use crate::util::Color::*;
-		match self {
-			Blank|Empty => Norm,
-			Wood|TwoWood => Magenta,
-			Leaf|Tree|TwoTree => Green,
-			Rock|TwoRock|ThreeRock => Cyan,
-			Brick|Building => Red,
-			Field => Yellow,
-			Water => Blue
-		}
+	pub fn new(t: Tile, h: u8) -> Hex {
+		Hex{t, h, cube: false}
 	}
 
-	pub fn char(&self, lined: bool) -> char {
-		match self {
-			Wood|TwoWood => 't',
-			Leaf|Tree|TwoTree => 'l',
-			Rock|TwoRock|ThreeRock => 'r',
-			Brick|Building => 'b',
-			Field => 'f',
-			Water => 'w',
-			Blank|Empty => ' '
-		}
+	pub fn cube(t: Tile, h: u8) -> Hex {
+		Hex{t, h, cube: true}
 	}
 
-	pub fn show(&self, lined: bool) -> String {
-		self.color().ansi() +
-		&(if lined {color_under()} else {String::new()}) +
-		(match self {
-			Blank => "  ",
-			Empty => "╶╴",
-			Wood => "-t",
-			TwoWood => "=t",
-			Leaf => "-l",
-			Tree => "=l",
-			TwoTree => "≡l",
-			Rock => "-r",
-			TwoRock => "=r",
-			ThreeRock => "≡r",
-			Brick => "-b",
-			Building => "=b",
-			Field => "-f",
-			Water => "-w"
-		}) + &color_reset()
+	pub fn level(&self) -> char {
+		match self.h {
+			1 => '-', 2 => '=',
+			3 => '≡', _ => ' '
+		}
+	}
+	
+	pub fn show(&self) -> String {
+		if self.t == Empty {return "╶╴".to_string()}
+		format!("{}{}{}{}",
+			self.t.color().ansi(),
+			self.level(),
+			if self.cube {self.t.cube()} else {self.t.symbol()},
+			Color::Norm.ansi()
+		)
+	}
+
+	pub fn empty() -> Self {
+		Hex{t: Empty, h: 0, cube: false}
 	}
 }
 
 pub struct Grid {
 	pub h: usize, pub w: usize,
 	pub hexes: Vec<Vec<Hex>>,
-	pub cubes: Vec<Vec<bool>>
 }
 
 impl Grid {
@@ -99,16 +116,14 @@ impl Grid {
 	// standard grids are 5x5 and 7x4
 	pub fn new_rect(h: usize, w: usize) -> Self {
 		let mut hexes = Vec::with_capacity(h);
-		let mut cubes = Vec::with_capacity(h);
 		for i in 0..h {
 			let l = w-if i%2==1 {1} else {0};
-			hexes.push(vec![Hex::Empty; l as usize]);
-			cubes.push(vec![false; l as usize]);
+			hexes.push(vec![Hex::empty(); l as usize]);
 		}
-		Grid {h, w, hexes, cubes}
+		Grid {h, w, hexes}
 	}
 
-	pub fn stack(&mut self, y: usize, x: usize, h: &Hex) -> Option<()> {
+	pub fn stack(&mut self, y: usize, x: usize, h: &Tile) -> Option<()> {
 		*self.hexes.get_mut(y)?.get_mut(x)? =
 			self.hexes.get(y)?.get(x)?.stack(h)?;
 		Some(())
@@ -124,17 +139,11 @@ impl Grid {
 		self.get(y as usize, x as usize/2)
 	}
 
-	pub fn get_cube2x(&self, y: isize, x: isize) -> bool {
-		if y < 0 || x < 0 {return false;}
-		self.cubes[y as usize][x as usize/2]
-	}
-
 	// [doubled x] rotate pi/3 clockwise about (0, 0)
 	pub fn rot(y: isize, x: isize) -> (isize, isize) {
 		((y+x)/2, (-3*y+x)/2)
 	}
 
-	// yeah i have no idea either
 	pub fn valid_cube(&mut self, y: isize, x: isize, c: &Card) -> bool {
 		// NOTE: x values are often doubled
 		let offs = vec![(-1, -1), (-1, 1), (0, -2), (0, 0), (0, 2)];
@@ -149,12 +158,10 @@ impl Grid {
 		// try each possible rotation and cell
 		for _ in 0..6 {
 			let dx2 = x*2+(self.h as isize%2);
-			let c = self.get2x(y, dx2);
-			if c == None {continue;}
-			if self.get_cube2x(y, dx2) {continue;}
+			let Some(Hex{cube: false,..}) = self.get2x(y, dx2) else {continue};
 			let mut yum = true;
 			for &(p, h) in map.iter() {
-				if h != Hex::Empty && self.get2x(y+p.0, dx2+p.1) != Some(h) {
+				if h.t != Empty && self.get2x(y+p.0, dx2+p.1) != Some(h) {
 					yum = false; break;
 				}
 			}

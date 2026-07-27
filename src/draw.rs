@@ -20,7 +20,7 @@ impl Grid {
 			lines[i] += &format!("{} ", i);
 			if i%2 == 0 {lines[i].push(' ');}
 			for (j, &hex) in self.hexes[i-1].iter().enumerate() {
-				lines[i] += &hex.show(self.cubes[i-1][j]);
+				lines[i] += &hex.show();
 			}
 			if i%2 == 0 {lines[i].push(' ');}
 		}
@@ -38,16 +38,16 @@ pub fn draw(g: &Game, m: u8) {
 	for (_, &c) in g.counts.iter() {sum += c;}
 	margin(m);
 	print!("rem: {} (", sum);
-	for (i, (h, c)) in g.counts.iter().enumerate() {
-		print!("{}: {}", h.show(false), c);
+	for (i, (t, c)) in g.counts.iter().enumerate() {
+		print!("{}{} {}", t.color().ansi(), c, t.show());
 		if i != g.counts.len()-1 {print!(", ");}
 	}
 	println!(")");
 
 	margin(m);
-	for _ in 0..12 {print!("─");}
+	for _ in 0..9 {print!("─");}
 	print!("┬");
-	for _ in 0..11*g.shop.len() {print!("─");}
+	for _ in 0..11*g.shop.len()+3 {print!("─");}
 	println!();
 
 	// draw pools and cards
@@ -57,11 +57,11 @@ pub fn draw(g: &Game, m: u8) {
 	}
 	for i in 0..4 {
 		margin(m);
-		if i == 0 {print!("pools:     ");}
+		if i == 0 {print!("pools:  ");}
 		else {
 			print!("{}:", i);
 			for j in 0..3 {
-				print!(" {}", g.pools[i-1].get(j).unwrap_or(&Hex::Empty).show(false));
+				print!(" {}", g.pools[i-1].get(j).unwrap_or(&Tile::Empty).show());
 			}
 		}
 		print!(" │ ");
@@ -71,9 +71,13 @@ pub fn draw(g: &Game, m: u8) {
 		println!();
 	}
 	margin(m);
-	for _ in 0..12 {print!("─");}
-	print!("┴┬");
-	for _ in 0..11*g.shop.len()-1 {print!("─");}
+	//for _ in 0..9 {print!("─");}
+	//print!("┴───┬");
+	//for _ in 0..11*g.shop.len()-1 {print!("─");}
+	for i in 0..11*g.shop.len()+13 {
+		let x = (if i == 9 {2} else {0}) + (if i == 2*g.grid.w+3 {1} else {0});
+		print!("{}", ["─", "┬", "┴", "┼"][x]);
+	}
 	println!();
 	
 	// draw board and owned cards
@@ -93,7 +97,7 @@ pub fn draw(g: &Game, m: u8) {
 	if !g.held.is_empty() {
 		margin(m);
 		for hex in g.held.iter() {
-			print!("{} ", hex.show(false));
+			print!("{} ", hex.show());
 		}
 	}
 	println!();

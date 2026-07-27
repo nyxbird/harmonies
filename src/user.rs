@@ -61,8 +61,8 @@ pub fn ask(g: &mut Game, m: u8) -> Option<()> {
 		let x = s[1] as usize-'a' as usize;
 		let y = s[2] as usize-'1' as usize;
 		if s[0] >= '1' && s[0] <= '3' {
-			let hex = mem::take(&mut g.held[s[0] as usize-'1' as usize]);
-			g.grid.stack(y, x, &hex);
+			let tile = mem::take(&mut g.held[s[0] as usize-'1' as usize]);
+			g.grid.stack(y, x, &tile);
 		}
 		else if s[0] >= 'a' {
 			let c = &mut g.shop[s[0] as usize-'a' as usize];
