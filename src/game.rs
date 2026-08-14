@@ -2,6 +2,12 @@ use std::{prelude::*, collections::*};
 use rand::prelude::*;
 use crate::{card::*, grid::*};
 
+pub struct State {
+	pub done: bool,
+	pub quit: bool,
+	pub cardact: bool,
+}
+
 // current game state
 pub struct Game {
 	pub bag: Vec<Tile>,
@@ -14,12 +20,13 @@ pub struct Game {
 	pub owned: Vec<Card>,
 	pub score: u32,
 	pub done: bool,
+	pub cardact: bool
 }
 
 use Tile::*;
 
 impl Game {
-	pub fn new() -> Game {
+	pub fn new(y: usize, x: usize, side: WaterSide) -> Game {
 		let mut counts = BTreeMap::from([
 			(Wood, 21), (Leaf, 19),
 			(Rock, 23), (Brick, 15),
@@ -31,7 +38,6 @@ impl Game {
 		}
 		let mut rng = rand::rng();
 		bag.shuffle(&mut rng);
-		//let pools = take_pools(&mut bag).unwrap();
 		let mut deck = deck();
 		deck.shuffle(&mut rng);
 		let mut shop = vec![];
@@ -40,9 +46,10 @@ impl Game {
 			bag, counts, pools: vec![],
 			held: Vec::new(),
 			deck, shop,
-			grid: Grid::new_rect(5, 5),
+			grid: Grid::new_rect(y, x, side),
 			owned: Vec::new(),
-			score: 0, done: false
+			score: 0, done: false,
+			cardact: false
 		};
 		g.new_pools();
 		g
@@ -64,15 +71,4 @@ impl Game {
 		*self.counts.get_mut(&t).unwrap() -= 1;
 		Some(t)
 	}
-}
-
-pub fn take_pools(bag: &mut Vec<Tile>) -> Option<Vec<Vec<Tile>>> {
-	let mut pools = vec![Vec::new(); 3];
-	for p in 0..3 {
-		for _ in 0..3 {
-			pools[p].push(bag.pop()?);
-		}
-		pools[p].sort();
-	}
-	Some(pools)
 }

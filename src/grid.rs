@@ -1,8 +1,8 @@
-use std::prelude::*;
+use std::{prelude::*, collections::*};
 use crate::util::{*, Color::*};
 use crate::card::*;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Tile {
 	#[default] Empty,
 	Wood, Leaf,
@@ -96,31 +96,28 @@ impl Hex {
 	}
 }
 
+pub enum WaterSide {
+	River,
+	Islands
+}
+
+use WaterSide::*;
+
 pub struct Grid {
 	pub h: usize, pub w: usize,
 	pub hexes: Vec<Vec<Hex>>,
+	pub side: WaterSide
 }
 
 impl Grid {
-	//pub fn new(h: usize, w: usize) -> Self {
-	//	let mut hexes = Vec::with_capacity(h);
-	//	let mut cubes = Vec::with_capacity(h);
-	//	for i in 0..h {
-	//		let l = w as i32-(i as i32-h as i32/2).abs();
-	//		hexes.push(vec![Hex::Empty; l as usize]);
-	//		cubes.push(vec![false; l as usize]);
-	//	}
-	//	Grid{h, w, hexes, cubes}
-	//}
-	//
 	// standard grids are 5x5 and 7x4
-	pub fn new_rect(h: usize, w: usize) -> Self {
+	pub fn new_rect(h: usize, w: usize, side: WaterSide) -> Self {
 		let mut hexes = Vec::with_capacity(h);
 		for i in 0..h {
 			let l = w-if i%2==1 {1} else {0};
 			hexes.push(vec![Hex::empty(); l as usize]);
 		}
-		Grid {h, w, hexes}
+		Grid {h, w, hexes, side}
 	}
 
 	pub fn stack(&mut self, y: usize, x: usize, h: &Tile) -> Option<()> {
@@ -155,28 +152,15 @@ impl Grid {
 			p.0 -= offs[c.loc].0 as isize;
 			p.1 -= offs[c.loc].1 as isize;
 		}
-		// try each possible rotation and cell
+		// try each possible rotation
 		for r in 0..6 {
 			let dx2 = x*2+(y as isize%2);
 			let Some(Hex{cube: false,..}) = self.get2x(y, dx2) else {continue};
 			let mut yum = true;
 			for &(p, h) in map.iter() {
 				if self.get2x(y+p.0, dx2+p.1) != Some(Hex{cube: false,..h}) {
-					// TODO: fix broken card matching
-					print!("![{}{}{}]{}/{} ", r, y+p.0, dx2+p.1, 
-						if let Some(h0) = self.get2x(y+p.0, dx2+p.1) {h0.show()} else {"??".to_string()},		 
-					h.show());
-					yum = false;// break;
+					yum = false; break;
 				}
-				else {
-					print!("({}{}{}){}/{} ", r, y+p.0, dx2+p.1, 
-						if let Some(h0) = self.get2x(y+p.0, dx2+p.1) {h0.show()} else {"??".to_string()},		 
-					h.show());
-				}
-				//if let Some(h0) = self.get2x(y+p.0, dx2+p.1) && h0.t == h.t && h0.h == h.h {}
-				//else {
-				//	yum = false; break;
-				//}
 			}
 			if yum {return true}
 			// rotate
@@ -186,20 +170,125 @@ impl Grid {
 		}
 		return false;
 	}
-}
 
-//   a b c d e
-// 0 . . . . .
-// 1  . . . .
-// 2 . . . . .
-// 3  . . . .
-// 4 . . . . .
-//
-//   a b c d
-// 0 . . . .
-// 1  . . .
-// 2 . . . .
-// 3  . . .
-// 4 . . . .
-// 5  . . .
-// 6 . . . .
+	pub fn done(&self) -> bool {
+		let mut empty = 0;
+		for row in self.hexes.iter() {
+			for hex in row.iter() {
+				if hex.t == Empty {empty += 1;}
+			}
+		}
+		empty <= 2
+	}
+
+	pub fn adj(&self, y: usize, x: usize) -> Vec<(usize, usize)> {
+		let iy = y as isize;
+		let ix = x as isize;
+		let b = iy%2;
+		[(iy-1, ix+b-1), (iy-1, ix+b), (iy, ix-1),
+		(iy, ix+1), (iy+1, ix+b-1), (iy-1, ix+b)].into_iter().filter(
+			//|&(y, x)|grid.get(y).is_some_and(|r|r.get(x).is_some())
+			|p|p.0 >= 0 && p.1 >= 0 && self.get(p.0 as usize, p.1 as usize).is_some()
+		).map(
+			|p|(p.0 as usize, p.1 as usize)
+		).collect()
+	}
+
+	// lengths of groups of hexes that satisfy the predicate
+	pub fn groups<P>(&self, pred: P) -> Vec<u32>
+	where P: Fn(Hex) -> bool {
+		let mut lens = Vec::new();
+		let mut seen = HashSet::new();
+		for (r, row) in self.hexes.iter().enumerate() {
+			for (c, hex) in row.iter().enumerate() {
+				if !pred(self.hexes[r][c]) || seen.contains(&(r, c)) {continue;}
+				let mut q = VecDeque::new();
+				let mut len = 0;
+				q.push_back((r, c));
+				seen.insert((r, c));
+				while let Some(pos) = q.pop_front() {
+					len += 1;
+					for (y, x) in self.adj(pos.0, pos.1) {
+						if !pred(self.hexes[y][x]) || seen.contains(&(y, x)) {
+							continue;
+						} 
+						seen.insert((y, x));
+						q.push_back((y, x));
+					}
+				}
+				lens.push(len);
+			}
+		}
+		lens
+	}
+
+	pub fn count<P>(&self, pred: P) -> u32
+	where P: Fn(Hex) -> bool {
+		let mut count = 0;
+		for row in self.hexes.iter() {
+			for &hex in row.iter() {
+				if pred(hex) {count += 1;}
+			}
+		}
+		count
+	}
+
+	pub fn score(&self) -> BTreeMap<Tile, u32> {
+		let mut map = BTreeMap::new();
+		// tree scoring
+		map.insert(Leaf, 0);
+		for row in self.hexes.iter() {
+			for hex in row {
+				if hex.t == Leaf {
+					*map.get_mut(&Leaf).unwrap() += [0, 1, 3, 7][hex.h as usize];	
+				}
+			}
+		}	
+		
+		// mountain scoring
+		map.insert(Rock, 0);
+		for (r, row) in self.hexes.iter().enumerate() {
+			for (c, hex) in row.iter().enumerate() {
+				if hex.t != Rock {continue;}
+				let mut alone = true;
+				for (y, x) in self.adj(r, c) {
+					if self.hexes[y][x].t == Rock {alone = false;}
+				}
+				if !alone {
+					*map.get_mut(&Rock).unwrap() += [0, 1, 3, 7][hex.h as usize];
+				}
+			}
+		}
+
+		// field scoring
+		map.insert(Field, 5*self.groups(|h|h.t == Field).into_iter().filter(|&n|n>1).count() as u32);
+
+		// building scoring
+		map.insert(Brick, 0);
+		for (r, row) in self.hexes.iter().enumerate() {
+			for (c, hex) in row.iter().enumerate() {
+				if hex.t != Brick || hex.h < 2 {continue;}
+				let mut colors = HashSet::new();
+				for (y, x) in self.adj(r, c) {
+					if self.hexes[y][x].t != Empty {colors.insert(self.hexes[y][x].t);}
+				}
+				if colors.len() >= 3 {
+					*map.get_mut(&Brick).unwrap() += 5;
+				}
+			}
+		}
+		
+		// water scoring
+		map.insert(Water, 0);
+		match self.side {
+			River => {
+				;
+			},
+			Islands => {
+				*map.get_mut(&Water).unwrap() = 5*self.groups(|h|h.t != Water).len() as u32;
+			}
+		}
+
+		map
+	}
+}

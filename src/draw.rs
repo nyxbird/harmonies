@@ -57,14 +57,30 @@ pub fn draw(g: &Game, m: u8) {
 	}
 	for i in 0..4 {
 		margin(m);
-		if i == 0 {print!("pools:  ");}
-		else {
-			print!("{}:", i);
-			for j in 0..3 {
-				print!(" {}", g.pools[i-1].get(j).unwrap_or(&Tile::Empty).show());
+		if g.held.len() == 0 {
+			if i == 0 {print!("pools:  ");}
+			else {
+				print!("{}:", i);
+				for j in 0..3 {
+					print!(" {}", g.pools[i-1].get(j).unwrap_or(&Tile::Empty).show());
+				}
 			}
 		}
-		print!(" │ ");
+		else {
+			if i == 1 {print!("  held: ");}
+			else if i == 2 {
+				print!("  ");
+				for t in 0..3 {
+					print!("{} ",
+						if t < g.held.len() {g.held[t].show()}
+						else {" ".to_string()}
+					);
+				}
+			}
+			else {print!("        ");}
+		}
+		print!(" │");
+		if i == 0 {print!("*");} else {print!(" ");}
 		for c in shop.iter() {
 			print!("{} ", c[i]);
 		}
@@ -83,20 +99,16 @@ pub fn draw(g: &Game, m: u8) {
 	for c in g.owned.iter() {
 		owned.push(c.show());
 	}
-	for i in 0..grid.len() {
+	for i in 0..grid.len().max(4) {
 		margin(m);
+		// TODO: bug if grid height is too small
 		print!("{} │ ", grid[i]);
-		for c in owned.iter() {
-			print!("{} ", c[i]);
+		if i < 4 {	
+			for c in owned.iter() {
+				print!("{} ", c[i]);
+			}
 		}
 		println!();
 	}
-	if !g.held.is_empty() {
-		margin(m);
-		for hex in g.held.iter() {
-			print!("{} ", hex.show());
-		}
-	}
-	println!();
 }
 

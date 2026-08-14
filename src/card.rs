@@ -1,19 +1,46 @@
 use std::collections::HashMap;
 use crate::{grid::*, util::*};
 
+pub enum Score {
+	Cubes(Vec<u32>),
+	//Spirit(Box<dyn Fn(Grid)->u32>, String, u8),
+	Spirit(fn(Grid)->u32, String, u8),
+}
+
 pub struct Card {
 	pub name: String,
 	pub reqs: Vec<Hex>,
-	pub score: Vec<u32>,
+	pub score: Score,
 	pub loc: usize,
 	pub cubes: usize
 }
 
 impl Card {
-	pub fn new(name: &str, reqs: Vec<(Tile, u8)>, loc: usize, score: Vec<u32>) -> Self {
+	pub fn done(&self) -> bool {
+		match &self.score {
+			Score::Cubes(v) => {self.cubes >= v.len()},
+			Score::Spirit(..) => {self.cubes > 0}
+		}
+	}
+
+	pub fn new(name: &str, reqs: Vec<(Tile, u8)>, loc: usize, pts: Vec<u32>) -> Self {
 		let mut r = reqs.iter().map(|(t, h)|{Hex::new(*t, *h)}).collect::<Vec<_>>();
 		r[loc].cube = true;
-		Card {name: name.to_string(), reqs: r, score, loc, cubes: 0}
+		Card {name: name.to_string(), reqs: r, score: Score::Cubes(pts), loc, cubes: 0}
+	}
+
+	pub fn new_spirit(name: &str, reqs: Vec<(Tile, u8)>, loc: usize, spirit: fn(Grid)->u32, desc: String, sun: u8) -> Self {
+	//pub fn new_spirit<S>(name: &str, reqs: Vec<(Tile, u8)>, loc: usize, spirit: S, desc: String, sun: u8) -> Self
+	//where S: Fn(Grid)->u32 {
+		let mut r = reqs.iter().map(|(t, h)|{Hex::new(*t, *h)}).collect::<Vec<_>>();
+		r[loc].cube = true;
+		Card {
+			name: name.to_string(),
+			reqs: r,
+			//score: Score::Spirit(Box::new(spirit), desc, sun),
+			score: Score::Spirit(spirit, desc, sun),
+			loc, cubes: 0
+		}
 	}
 
 	pub fn show(&self) -> Vec<String> {
@@ -35,20 +62,24 @@ impl Card {
 		}
 		lines[1] += "  │"; lines[2] += " │";
 
-		for i in 0..5 {
-			lines[3].push(
-				if self.score.len() > i {
-					if self.cubes <= i {char::from_digit(self.score[i], 10).unwrap()}
-					else {'╌'}	
+		match &self.score {
+			Score::Cubes(pts) => {
+				for i in 0..5 {
+					lines[3].push(
+						if pts.len() > i {
+							if self.cubes <= i {char::from_digit(pts[i], 10).unwrap()}
+							else {'╌'}	
+						}
+						else if i == 4 {'╯'} else {'─'}
+					);
+					if i < 4 {lines[3].push('─')};
 				}
-				else if i == 4 {'╯'} else {'─'}
-			);
-			if i < 4 {lines[3].push('─')};
+			},
+			Score::Spirit(..) => {
+				lines[3] = "╘════════╛".to_string();
+			}
 		}
 
-		if self.score.len() == 0 {
-			lines[3] = "╘════════╛".to_string();
-		}
 		lines
 	}
 }
@@ -157,39 +188,55 @@ pub fn deck() -> Vec<Card> {
 	]
 }
 
-// the soul animals or whatever
-pub fn souls() -> Vec<Card> {
+// +--------+
+// +-r3=r3~r1+
+// +r:-/=3 ~1+
+
+// f:
+
+// the spirit animals or whatever
+pub fn spirits() -> Vec<Card> {
 	vec![
-		Card::new("Bttrfly",
+		Card::new_spirit("Bttrfly",
 			vec![(Water, 1), (Field, 1), (Field, 1), (Water, 1), (Empty, 0)], 1,
-			vec![]),
-		Card::new("Cat",
+			|g|{5*g.groups(|h|h.t == Field).len() as u32},
+			Field.color().wrap("f+")+":5", 1),
+		Card::new_spirit("Cat",
 			vec![(Empty, 0), (Empty, 0), (Brick, 2), (Leaf, 1), (Brick, 2)], 4,
-			vec![]),
-		Card::new("Deer",
+			|g|{4*g.groups(|h|h.t == Brick && h.h == 2).len() as u32},
+			Brick.color().wrap("=b+")+":4", 1),
+		Card::new_spirit("Deer",
 			vec![(Empty, 0), (Empty, 0), (Leaf, 3), (Leaf, 2), (Leaf, 1)], 3,
-			vec![]),
-		Card::new("Drgnfly",
+			|g|{4*g.count(|h|h.t == Leaf && h.h > 1)},
+			Leaf.color().wrap("=/≡t:")+":4", 0),
+		Card::new_spirit("Drgnfly",
 			vec![(Empty, 0), (Empty, 0), (Leaf, 2), (Water, 1), (Leaf, 2)], 3,
-			vec![]),
-		Card::new("Goat",
+			|g|{7*g.groups(|h|h.t == Water).into_iter().filter(|&n|n>1).count() as u32},
+			Water.color().wrap("ww+")+":7", 1),
+		Card::new_spirit("Goat",
 			vec![(Rock, 2), (Empty, 0), (Empty, 0), (Rock, 3), (Empty, 0)], 3,
-			vec![]),
-		Card::new("Lion",
+			|g|{4*g.count(|h|h.t == Rock && h.h > 1)},
+			Rock.color().wrap("=/≡r")+":4", 0),
+		Card::new_spirit("Lion",
 			vec![(Empty, 0), (Empty, 0), (Leaf, 2), (Field, 1), (Field, 1)], 3,
-			vec![]),
-		Card::new("Marmot",
+			|g|{g.groups(|h|h.t == Field).into_iter().map(|n|if n>2 {10} else {2}).sum()},
+			Field.color().wrap("f+")+":2,2,10", 1),
+		Card::new_spirit("Marmot",
 			vec![(Empty, 0), (Rock, 1), (Rock, 1), (Rock, 2), (Empty, 0)], 3,
-			vec![]),
-		Card::new("Stork",
+			|g|{2*g.count(|h|h.t == Rock && h.h < 3)+g.count(|h|h.t == Rock)},
+			Rock.color().wrap("?r")+":3,3,1", 0),
+		Card::new_spirit("Stork",
 			vec![(Empty, 0), (Empty, 0), (Field, 1), (Brick, 2), (Brick, 2)], 4,
-			vec![]),
-		Card::new("Tortse",
+			|g|{g.groups(|h|h.t == Brick && h.h == 2).into_iter().filter(|&n|n>1).count() as u32},
+			Brick.color().wrap("=bb+")+":6", 1),
+		Card::new_spirit("Turtle", // Tortoise
 			vec![(Empty, 0), (Empty, 0), (Rock, 2), (Water, 1), (Water, 1)], 3,
-			vec![]),
-		Card::new("Owl",
+			|g|{2*g.count(|h|h.t == Water)},
+			Water.color().wrap("w")+":2", 0),
+		Card::new_spirit("Owl",
 			vec![(Leaf, 1), (Leaf, 1), (Empty, 0), (Leaf, 3), (Empty, 0)], 3,
-			vec![]),
+			|g|{2*g.count(|h|h.t == Leaf && h.h < 3)+g.count(|h|h.t == Leaf)},
+			Leaf.color().wrap("?l")+":3,3,1", 0),
 	]
 }
 

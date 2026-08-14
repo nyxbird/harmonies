@@ -10,35 +10,31 @@ use std::prelude::*;
 use rand::prelude::*;
 use crate::{grid::*, draw::*, game::*, card::*, util::*, user::*};
 
+// TODO:
+// cli options:
+// grid side (A: (5x5 rivers), B: (7x4 islands))
+// - include fanmade?
+// - crescedo (when it comes out)
+// spirits (random, chosen, none)
+// expansions
+// - dino
+// - pulse
+// - crescendo (when it comes out)
+// melodies (random, selected)
+// high score tracker
+// - just write to a file with options?
+// - in-game viewer?
+
 fn main() {
-	let mut game = Game::new();
-	draw(&game, 3);
-	loop {
-		if ask(&mut game, 3) == None {
+	let mut game = Game::new(5, 5, WaterSide::Islands);
+	while(!game.done) {
+		print!("{}", clear());
+		draw(&game, 3);
+		while !ask(&mut game, 3) {
 			println!("invalid");
 		}
-		else {
-			clear();
-			draw(&game, 3);
-		}
 	}
-	//draw(&game, 3);
-	//loop {
-	//	if pick_pool(&mut game, 3) {
-	//		println!("took pool");
-	//		break;
-	//	}
-	//	else {println!("invalid pool");}
-	//}
-	//clear();
-	//draw(&game, 3);
-	//loop {
-	//	if let Some(_) = place_hex(&mut game, 3) {
-	//		println!("placed hex");
-	//		break;
-	//	}
-	//	else {println!("invalid placement");}
-	//}
-	//clear();
-	//draw(&game, 3);
+	print!("{}", clear());
+	draw(&game, 3);
+	end(&mut game);
 }
