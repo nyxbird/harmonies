@@ -96,6 +96,7 @@ impl Hex {
 	}
 }
 
+#[derive(PartialEq)]
 pub enum WaterSide {
 	River,
 	Islands
@@ -233,6 +234,30 @@ impl Grid {
 		count
 	}
 
+	pub fn score_river(&self) -> u32 {
+		let mut best = 0;
+		for (r, row) in self.hexes.iter().enumerate() {
+			for (c, hex) in row.iter().enumerate() {
+				if (self.hexes[r][c].t != Water) {continue;}
+				let mut seen = HashSet::new();
+				let mut q = VecDeque::new();
+				let mut d = 1;
+				q.push_back((r, c, 1));
+				seen.insert((r, c));
+				while let Some(pos) = q.pop_front() {
+					for (y, x) in self.adj(pos.0, pos.1) {
+						if self.hexes[y][x].t != Water || seen.contains(&(y, x)) {continue;} 
+						q.push_back((y, x, pos.2+1));
+						seen.insert((y, x));
+						d = d.max(pos.2+1);
+					}
+				}
+				best = best.max(d);
+			}
+		}
+		[0, 0, 2, 5, 8, 11, 15][best.min(6)]+4*(best.max(6)-6) as u32
+	}
+
 	pub fn score(&self) -> BTreeMap<Tile, u32> {
 		let mut map = BTreeMap::new();
 		// tree scoring
@@ -279,16 +304,12 @@ impl Grid {
 		}
 		
 		// water scoring
-		map.insert(Water, 0);
-		match self.side {
-			River => {
-				;
-			},
-			Islands => {
-				*map.get_mut(&Water).unwrap() = 5*self.groups(|h|h.t != Water).len() as u32;
+		map.insert(Water,
+			match self.side {
+				River => {self.score_river()},
+				Islands => {5*self.groups(|h|h.t != Water).len() as u32}
 			}
-		}
-
+		);
 		map
 	}
 }

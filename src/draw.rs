@@ -34,10 +34,23 @@ pub fn margin(m: u8) {
 
 pub fn draw(g: &Game, m: u8) {
 	// draw relevant info
-	let mut sum = 0;
-	for (_, &c) in g.counts.iter() {sum += c;}
+	let mut score_sum = g.score+g.score_spirit();
+	let scores = g.grid.score();
+	for (_, &s) in scores.iter() {score_sum += s;}
 	margin(m);
-	print!("score: {}; rem: {} (", g.score, sum);
+	print!("score: {} [{}] ({}", score_sum, g.rating(score_sum), g.score);
+	for (&t, &s) in scores.iter() {
+		print!("{}+{}{}", t.color().ansi(), s, Color::Norm.ansi());
+	}
+	if g.spirit.is_some() {
+		print!("+{}", g.score_spirit());
+	}
+	println!(")");
+
+	let mut count_sum = 0;
+	for (_, &c) in g.counts.iter() {count_sum += c;}
+	margin(m);
+	print!("rem: {} (", count_sum);
 	for (i, (t, c)) in g.counts.iter().enumerate() {
 		print!("{}{} {}", t.color().ansi(), c, t.show());
 		if i != g.counts.len()-1 {print!(", ");}
@@ -80,7 +93,7 @@ pub fn draw(g: &Game, m: u8) {
 			else {print!("        ");}
 		}
 		print!(" │");
-		if i == 0 {print!("*");} else {print!(" ");}
+		if i == 0 && !g.cardact {print!("*");} else {print!(" ");}
 		for c in shop.iter() {
 			print!("{} ", c[i]);
 		}

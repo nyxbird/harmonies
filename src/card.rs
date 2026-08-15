@@ -4,7 +4,7 @@ use crate::{grid::*, util::*};
 pub enum Score {
 	Cubes(Vec<u32>),
 	//Spirit(Box<dyn Fn(Grid)->u32>, String, u8),
-	Spirit(fn(Grid)->u32, String, u8),
+	Spirit(fn(&Grid)->u32, String, usize),
 }
 
 pub struct Card {
@@ -29,7 +29,7 @@ impl Card {
 		Card {name: name.to_string(), reqs: r, score: Score::Cubes(pts), loc, cubes: 0}
 	}
 
-	pub fn new_spirit(name: &str, reqs: Vec<(Tile, u8)>, loc: usize, spirit: fn(Grid)->u32, desc: String, sun: u8) -> Self {
+	pub fn new_spirit(name: &str, reqs: Vec<(Tile, u8)>, loc: usize, spirit: fn(&Grid)->u32, desc: String, sun: usize) -> Self {
 	//pub fn new_spirit<S>(name: &str, reqs: Vec<(Tile, u8)>, loc: usize, spirit: S, desc: String, sun: u8) -> Self
 	//where S: Fn(Grid)->u32 {
 		let mut r = reqs.iter().map(|(t, h)|{Hex::new(*t, *h)}).collect::<Vec<_>>();

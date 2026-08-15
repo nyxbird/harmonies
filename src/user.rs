@@ -94,7 +94,7 @@ pub fn ask(g: &mut Game, m: u8) -> bool {
 			let y = *yc as usize-'1' as usize; let x = *xc as usize-'a' as usize;
 			g.grid.stack(y, x, &tile.unwrap());
 			if g.grid.done() {g.done = true;}
-			if g.held.len() == 0 {g.cardact = true;}
+			if g.held.len() == 0 {g.cardact = false;}
 		},
 		['!', p@..]|[p@.., '!'] => {
 			// trash from shop			
@@ -104,7 +104,7 @@ pub fn ask(g: &mut Game, m: u8) -> bool {
 			if let Some(c) = g.deck.pop() {
 				g.shop.push(c);
 			}
-			g.cardact = false;
+			g.cardact = true;
 		},
 		[xc@'a'..='j', yc@'1'..='9', p@..]|[p@.., xc@'a'..='j', yc@'1'..='9'] => {
 			let Some(i) = pref_filter(p, &g.owned) else {return false};
