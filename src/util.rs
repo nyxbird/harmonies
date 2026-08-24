@@ -1,5 +1,3 @@
-use std::prelude::*;
-
 pub enum Color {
 	Norm,
 	Red,
@@ -33,14 +31,17 @@ impl Color {
 	}
 }
 
-pub fn use_color() -> bool {true}
-pub fn color_red() -> String {String::from(if use_color() {"\x1b[31m"} else {""})}
-pub fn color_green() -> String {String::from(if use_color() {"\x1b[32m"} else {""})}
-pub fn color_yellow() -> String {String::from(if use_color() {"\x1b[33m"} else {""})}
-pub fn color_blue() -> String {String::from(if use_color() {"\x1b[34m"} else {""})}
-pub fn color_magenta() -> String {String::from(if use_color() {"\x1b[35m"} else {""})}
-pub fn color_cyan() -> String {String::from(if use_color() {"\x1b[36m"} else {""})}
-pub fn color_reset() -> String {String::from(if use_color() {"\x1b[0m"} else {""})}
-pub fn color_under() -> String {String::from(if use_color() {"\x1b[4m"} else {""})}
+pub fn norm_len(s: &str) -> usize {
+	let mut len = 0;
+	let mut esc = false;
+	for c in s.chars() {
+		if c == '\x1b' {esc = true;}
+		if !esc {len += 1;}
+		if c == 'm' {esc = false;}
+	}
+	len
+}
 
+pub fn use_color() -> bool {true}
+pub fn color_reset() -> String {(if use_color() {"\x1b[0m"} else {""}).to_string()}
 pub fn clear() -> String {"\x1b[3J\x1b[H\x1b[2J".to_string()}

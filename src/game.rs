@@ -1,12 +1,6 @@
-use std::{prelude::*, collections::*};
+use std::collections::*;
 use rand::prelude::*;
 use crate::{card::*, grid::*};
-
-pub struct State {
-	pub done: bool,
-	pub quit: bool,
-	pub cardact: bool,
-}
 
 // current game state
 pub struct Game {
@@ -29,7 +23,7 @@ use Tile::*;
 
 impl Game {
 	pub fn new(y: usize, x: usize, side: WaterSide, use_pulse: bool) -> Game {
-		let mut counts = BTreeMap::from([
+		let counts = BTreeMap::from([
 			(Wood, 21), (Leaf, 19),
 			(Rock, 23), (Brick, 15),
 			(Field, 19), (Water, 23)
@@ -71,11 +65,17 @@ impl Game {
 	}
 
 	pub fn pull_tile(&mut self) -> Option<Tile> {
-		let Some(t) = self.bag.pop() else {return None};
+		let t = self.bag.pop()?;
 		*self.counts.get_mut(&t).unwrap() -= 1;
 		Some(t)
 	}
 		
+	pub fn pull_spirits(&mut self) {
+		let mut sps = spirits();
+		sps.shuffle(&mut rand::rng());
+		for _ in 0..2 {self.owned.push(sps.pop().unwrap());}
+	}
+
 	pub fn score_spirit(&self) -> u32 {
 		if let Some(Score::Spirit(f, _, _)) = self.spirit {
 			f(&self.grid)
@@ -84,9 +84,8 @@ impl Game {
 
 	pub fn rating(&self, score: u32) -> String {
 		let mut suns = self.suns;
-		let sum = self.score+self.grid.score().values().sum::<u32>();
 		for v in [40, 70, 90, 110, 130, 140, 150, 160] {
-			if sum >= v {suns += 1;}
+			if score >= v {suns += 1;}
 			else {break;}
 		}
 		if self.grid.side == WaterSide::Islands {suns += 1;}

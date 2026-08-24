@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use crate::{grid::*, util::*};
 
+#[derive(Clone)]
 pub enum Score {
 	Cubes(Vec<u32>),
 	//Spirit(Box<dyn Fn(Grid)->u32>, String, u8),
@@ -75,8 +75,12 @@ impl Card {
 					if i < 4 {lines[3].push('─')};
 				}
 			},
-			Score::Spirit(..) => {
-				lines[3] = "╘════════╛".to_string();
+			Score::Spirit(_, desc, _) => {
+				lines[3] = "╘".to_string();
+				lines[3] += desc;
+				let l = norm_len(desc);
+				for _ in 0..(8-l.min(8)) {lines[3] += "═";}
+				if l < 9 {lines[3] += "╛";}
 			}
 		}
 
@@ -130,7 +134,7 @@ pub fn deck() -> Vec<Card> {
 			vec![5, 7]),
 		Card::new("Kngfshr",
 			vec![(Empty, 0), (Water, 1), (Water, 1), (Leaf, 3), (Empty, 0)], 3,
-			vec![5, 6, ]),
+			vec![5, 6, 7]),
 		Card::new("Koala",
 			vec![(Leaf, 1), (Empty, 0), (Empty, 0), (Leaf, 2), (Empty, 0)], 3,
 			vec![3, 3, 4, 5]),
@@ -227,7 +231,7 @@ pub fn spirits() -> Vec<Card> {
 			Rock.color().wrap("?r")+":3,3,1", 0),
 		Card::new_spirit("Stork",
 			vec![(Empty, 0), (Empty, 0), (Field, 1), (Brick, 2), (Brick, 2)], 4,
-			|g|{g.groups(|h|h.t == Brick && h.h == 2).into_iter().filter(|&n|n>1).count() as u32},
+			|g|{6*g.groups(|h|h.t == Brick && h.h == 2).into_iter().filter(|&n|n>1).count() as u32},
 			Brick.color().wrap("=bb+")+":6", 1),
 		Card::new_spirit("Turtle", // Tortoise
 			vec![(Empty, 0), (Empty, 0), (Rock, 2), (Water, 1), (Water, 1)], 3,

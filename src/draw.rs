@@ -1,14 +1,6 @@
-use std::prelude::*;
-use crate::{game::*, grid::*, util::*};
+use crate::{card::*, game::*, grid::*, util::*};
 
 impl Grid {
-	pub fn draw(&self) {
-		let lines = self.show();
-		for line in lines {
-			println!("{}", line);
-		}
-	}
-
 	pub fn show(&self) -> Vec<String> {
 		let mut lines = vec![String::new(); self.h+1];
 		lines[0] += "  ";
@@ -19,7 +11,7 @@ impl Grid {
 		for i in 1..self.h+1 {
 			lines[i] += &format!("{} ", i);
 			if i%2 == 0 {lines[i].push(' ');}
-			for (j, &hex) in self.hexes[i-1].iter().enumerate() {
+			for &hex in self.hexes[i-1].iter() {
 				lines[i] += &hex.show();
 			}
 			if i%2 == 0 {lines[i].push(' ');}
@@ -32,8 +24,7 @@ pub fn margin(m: u8) {
 	for _ in 0..m {print!(" ");}
 }
 
-pub fn draw(g: &Game, m: u8) {
-	// draw relevant info
+pub fn draw_score(g: &Game, m: u8) {
 	let mut score_sum = g.score+g.score_spirit();
 	let scores = g.grid.score();
 	for (_, &s) in scores.iter() {score_sum += s;}
@@ -42,10 +33,15 @@ pub fn draw(g: &Game, m: u8) {
 	for (&t, &s) in scores.iter() {
 		print!("{}+{}{}", t.color().ansi(), s, Color::Norm.ansi());
 	}
-	if g.spirit.is_some() {
-		print!("+{}", g.score_spirit());
+	if let Some(Score::Spirit(_, desc, _)) = &g.spirit {
+		println!("+{}) {{{}}}", g.score_spirit(), desc);
 	}
-	println!(")");
+	else {println!(")");}
+}
+
+pub fn draw(g: &Game, m: u8) {
+	// draw relevant info
+	draw_score(g, m);
 
 	let mut count_sum = 0;
 	for (_, &c) in g.counts.iter() {count_sum += c;}
@@ -70,16 +66,7 @@ pub fn draw(g: &Game, m: u8) {
 	}
 	for i in 0..4 {
 		margin(m);
-		if g.held.len() == 0 {
-			if i == 0 {print!("pools:  ");}
-			else {
-				print!("{}:", i);
-				for j in 0..3 {
-					print!(" {}", g.pools[i-1].get(j).unwrap_or(&Tile::Empty).show());
-				}
-			}
-		}
-		else {
+		if !g.held.is_empty() {
 			if i == 1 {print!("  held: ");}
 			else if i == 2 {
 				print!("  ");
@@ -91,6 +78,20 @@ pub fn draw(g: &Game, m: u8) {
 				}
 			}
 			else {print!("        ");}
+		}
+		else if g.grid.done() {
+			if i == 1 {print!("  done! ");}
+			else if i == 2 {print!(" press q");}
+			else {print!("        ");}
+		}
+		else {
+			if i == 0 {print!("pools:  ");}
+			else {
+				print!("{}:", i);
+				for j in 0..3 {
+					print!(" {}", g.pools[i-1].get(j).unwrap_or(&Tile::Empty).show());
+				}
+			}
 		}
 		print!(" │");
 		if i == 0 && !g.cardact {print!("*");} else {print!(" ");}
@@ -114,8 +115,7 @@ pub fn draw(g: &Game, m: u8) {
 	}
 	for i in 0..grid.len().max(4) {
 		margin(m);
-		// TODO: bug if grid height is too small
-		print!("{} │ ", grid[i]);
+		if i < grid.len() {print!("{} │ ", grid[i]);}
 		if i < 4 {	
 			for c in owned.iter() {
 				print!("{} ", c[i]);

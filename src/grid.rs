@@ -1,5 +1,5 @@
-use std::{prelude::*, collections::*};
-use crate::util::{*, Color::*};
+use std::collections::*;
+use crate::util::*;
 use crate::card::*;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -61,17 +61,13 @@ impl Hex {
 			(Hex{t:Wood, h:1,..}, Wood) => Some(Hex::new(Wood, 2)),
 			(Hex{t:Wood, h:x@(1|2),..}, Leaf) => Some(Hex::new(Leaf, x+1)),
 			(Hex{t:Rock, h:x@(1|2),..}, Rock) => Some(Hex::new(Rock, x+1)),
-			(Hex{t:(Wood|Rock|Brick), h:1,..}, Brick) => Some(Hex::new(Brick, 2)),
+			(Hex{t:Wood|Rock|Brick, h:1,..}, Brick) => Some(Hex::new(Brick, 2)),
 			_ => None
 		}
 	}
 
 	pub fn new(t: Tile, h: u8) -> Hex {
 		Hex{t, h, cube: false}
-	}
-
-	pub fn cube(t: Tile, h: u8) -> Hex {
-		Hex{t, h, cube: true}
 	}
 
 	pub fn level(&self) -> char {
@@ -116,7 +112,7 @@ impl Grid {
 		let mut hexes = Vec::with_capacity(h);
 		for i in 0..h {
 			let l = w-if i%2==1 {1} else {0};
-			hexes.push(vec![Hex::empty(); l as usize]);
+			hexes.push(vec![Hex::empty(); l]);
 		}
 		Grid {h, w, hexes, side}
 	}
@@ -144,22 +140,25 @@ impl Grid {
 
 	pub fn valid_cube(&mut self, y: isize, x: isize, c: &Card) -> bool {
 		// NOTE: x values are often doubled
-		let offs = vec![(-1, -1), (-1, 1), (0, -2), (0, 0), (0, 2)];
+		let offs = [(-1, -1), (-1, 1), (0, -2), (0, 0), (0, 2)];
 		let mut map = Vec::new();
 		for i in 0..5 {
 			if c.reqs[i].t != Empty {map.push((offs[i], c.reqs[i]))}
 		}
 		for (p, _) in map.iter_mut() {
-			p.0 -= offs[c.loc].0 as isize;
-			p.1 -= offs[c.loc].1 as isize;
+			p.0 -= offs[c.loc].0;
+			p.1 -= offs[c.loc].1;
 		}
 		// try each possible rotation
-		for r in 0..6 {
-			let dx2 = x*2+(y as isize%2);
+		for _ in 0..6 {
+			let dx2 = x*2+(y%2);
 			let Some(Hex{cube: false,..}) = self.get2x(y, dx2) else {continue};
 			let mut yum = true;
 			for &(p, h) in map.iter() {
-				if self.get2x(y+p.0, dx2+p.1) != Some(Hex{cube: false,..h}) {
+				let Some(at) = self.get2x(y+p.0, dx2+p.1) else {
+					yum = false; break;
+				};
+				if at.h != h.h || at.t != h.t {
 					yum = false; break;
 				}
 			}
@@ -169,7 +168,7 @@ impl Grid {
 				*p = Self::rot(p.0, p.1);
 			}
 		}
-		return false;
+		false
 	}
 
 	pub fn done(&self) -> bool {
@@ -187,7 +186,7 @@ impl Grid {
 		let ix = x as isize;
 		let b = iy%2;
 		[(iy-1, ix+b-1), (iy-1, ix+b), (iy, ix-1),
-		(iy, ix+1), (iy+1, ix+b-1), (iy-1, ix+b)].into_iter().filter(
+		(iy, ix+1), (iy+1, ix+b-1), (iy+1, ix+b)].into_iter().filter(
 			//|&(y, x)|grid.get(y).is_some_and(|r|r.get(x).is_some())
 			|p|p.0 >= 0 && p.1 >= 0 && self.get(p.0 as usize, p.1 as usize).is_some()
 		).map(
@@ -201,8 +200,8 @@ impl Grid {
 		let mut lens = Vec::new();
 		let mut seen = HashSet::new();
 		for (r, row) in self.hexes.iter().enumerate() {
-			for (c, hex) in row.iter().enumerate() {
-				if !pred(self.hexes[r][c]) || seen.contains(&(r, c)) {continue;}
+			for (c, &hex) in row.iter().enumerate() {
+				if !pred(hex) || seen.contains(&(r, c)) {continue;}
 				let mut q = VecDeque::new();
 				let mut len = 0;
 				q.push_back((r, c));
@@ -238,7 +237,7 @@ impl Grid {
 		let mut best = 0;
 		for (r, row) in self.hexes.iter().enumerate() {
 			for (c, hex) in row.iter().enumerate() {
-				if (self.hexes[r][c].t != Water) {continue;}
+				if hex.t != Water {continue;}
 				let mut seen = HashSet::new();
 				let mut q = VecDeque::new();
 				let mut d = 1;

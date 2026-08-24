@@ -1,4 +1,4 @@
-#![allow(warnings)]
+//#![allow(warnings)]
 
 mod grid;
 mod draw;
@@ -6,10 +6,8 @@ mod game;
 mod user;
 mod card;
 mod util;
-use std::prelude::*;
-use rand::prelude::*;
 use clap::Parser;
-use crate::{grid::*, draw::*, game::*, card::*, util::*, user::*};
+use crate::{grid::*, draw::*, game::*, util::*, user::*};
 
 // TODO:
 // cli options:
@@ -25,6 +23,10 @@ use crate::{grid::*, draw::*, game::*, card::*, util::*, user::*};
 // high score tracker
 // - just write to a file with options?
 // - in-game viewer?
+
+// FIXME:
+// add in mirroring behavior!!
+// change end condition until cubes have been placed
 
 #[derive(Parser)]
 #[command(name = "Harmonies")]
@@ -56,15 +58,26 @@ fn main() {
 		if a_side {Game::new(5, 5, WaterSide::River, cli.pulse)}
 		else {Game::new(7, 4, WaterSide::Islands, cli.pulse)};
 
-	// run game
-	while(!game.done) {
+	if cli.spirit {
+		game.pull_spirits();
 		print!("{}", clear());
 		draw(&game, 3);
-		while !ask(&mut game, 3) {
-			println!("invalid");
+		while let Some(err) = pick_spirit(&mut game, 3) {
+			margin(3);
+			println!("{}", err);
+		}
+	}
+
+	// run game
+	while !game.done {
+		print!("{}", clear());
+		draw(&game, 3);
+		while let Some(err) = ask(&mut game, 3) {
+			margin(3);
+			println!("{}", err);
 		}
 	}
 	print!("{}", clear());
 	draw(&game, 3);
-	end(&mut game);
+	draw_score(&game, 3);
 }
