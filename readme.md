@@ -29,7 +29,7 @@ You may end the game at any time by entering `q`.
 
 ## Expansions
 ### Spirit Animals
-(Running the program with the -s flag grants access to spirit animals)
+(Running the program with the -s flag grants access to spirit animals.)  
 At the beginning of the game, you will be presented with two potential spirit animals. Enter a prefix of the name of one to select it. Spirits act like normal animal cards, but have more complicated patterns, and reward you with an additional scoring condition rather than a fixed point count.
 
 | Name | Abbreviation | Condition |
@@ -46,6 +46,6 @@ At the beginning of the game, you will be presented with two potential spirit an
 | Owl | `?l:3,3,1` | `l`eaves score based on height: 3 for 1 or 2, 1 for 3 |
 
 ### Pulse
-(Running the program with the -p flag grants access to pulse cards)
+(Running the program with the -p flag grants access to pulse cards.)  
 This expansion adds 10 more (non-spirit) animal cards to the available pool. These cards each feature three colors of tiles, allowing for more complex patterns. 
 
