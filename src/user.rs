@@ -1,5 +1,5 @@
 use std::io::*;
-use crate::{draw::*, card::*, game::*,  util::*};
+use crate::{draw::*, card::*, game::*};
 
 pub fn prompt(m: u8) -> String {
 	margin(m);
@@ -130,17 +130,4 @@ pub fn ask(g: &mut Game, m: u8) -> Option<String> {
 		}
 	}
 	None
-}
-
-pub fn end(g: &mut Game) {
-	println!("complete!");
-	let mut total = g.score;
-	for v in g.grid.score().values() {
-		total += v;
-	}
-	print!("final score: {}! ({}", total, g.score);
-	for (t, v) in g.grid.score() {
-		print!("{}+{}{}", t.color().ansi(), v, Color::Norm.ansi());
-	}
-	println!(")");
 }

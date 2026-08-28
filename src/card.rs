@@ -212,7 +212,7 @@ pub fn spirits() -> Vec<Card> {
 		Card::new_spirit("Deer",
 			vec![(Empty, 0), (Empty, 0), (Leaf, 3), (Leaf, 2), (Leaf, 1)], 3,
 			|g|{4*g.count(|h|h.t == Leaf && h.h > 1)},
-			Leaf.color().wrap("=/≡t:")+":4", 0),
+			Leaf.color().wrap("=/≡l")+":4", 0),
 		Card::new_spirit("Drgnfly",
 			vec![(Empty, 0), (Empty, 0), (Leaf, 2), (Water, 1), (Leaf, 2)], 3,
 			|g|{7*g.groups(|h|h.t == Water).into_iter().filter(|&n|n>1).count() as u32},
@@ -244,6 +244,9 @@ pub fn spirits() -> Vec<Card> {
 	]
 }
 
+// TODO: dino ?????
+// "X+@??:2"
+
 // animals from the pulse expansion
 pub fn pulse() -> Vec<Card> {
 	vec![
@@ -254,7 +257,7 @@ pub fn pulse() -> Vec<Card> {
 			vec![(Rock, 2), (Leaf, 2), (Empty, 0), (Water, 1), (Empty, 0)], 3,
 			vec![7, 9]),
 		//TODO: check name
-		Card::new("Wren?",
+		Card::new("Wren",
 			vec![(Rock, 1), (Leaf, 1), (Empty, 0), (Brick, 2), (Empty, 0)], 3,
 			vec![4, 6, 7]),
 		Card::new("Gull",

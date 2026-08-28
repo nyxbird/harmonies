@@ -11,22 +11,22 @@ use crate::{grid::*, draw::*, game::*, util::*, user::*};
 
 // TODO:
 // cli options:
-// grid side (A: (5x5 rivers), B: (7x4 islands))
-// - include fanmade?
-// - crescedo (when it comes out)
-// spirits (random, chosen, none)
+// [X] grid side (A: (5x5 rivers), B: (7x4 islands))
+// [ ] include fanmade?
+// [ ] crescedo (when it comes out)
+// [X] spirits (random, chosen, none)
 // expansions
-// - dino
-// - pulse
-// - crescendo (when it comes out)
-// melodies (random, selected)
+// [ ] dino (requires noting where it is)
+//     - maybe show dino location in soul string?
+// [X] pulse
+// [ ] crescendo (when it comes out)
+// [ ] melodies (random, selected)
 // high score tracker
-// - just write to a file with options?
-// - in-game viewer?
+// [ ] just write to a file with options?
+// [ ] in-game viewer?
 
 // FIXME:
 // add in mirroring behavior!!
-// change end condition until cubes have been placed
 
 #[derive(Parser)]
 #[command(name = "Harmonies")]
