@@ -25,9 +25,6 @@ use crate::{grid::*, draw::*, game::*, util::*, user::*};
 // [ ] just write to a file with options?
 // [ ] in-game viewer?
 
-// FIXME:
-// add in mirroring behavior!!
-
 #[derive(Parser)]
 #[command(name = "Harmonies")]
 #[command(version = "0.0")]

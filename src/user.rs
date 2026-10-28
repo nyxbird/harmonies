@@ -22,6 +22,8 @@ pub fn pref_filter(pre: &[char], cards: &[Card]) -> Option<usize> {
 	res
 }
 
+pub fn err(s: &str) -> Option<String> {Some(s.to_string())}
+
 pub fn pick_spirit(g: &mut Game, m: u8) -> Option<String> {
 	if g.owned.len() != 2 {
 		return err("invalid spirit setup. this is a bug!");
@@ -35,11 +37,10 @@ pub fn pick_spirit(g: &mut Game, m: u8) -> Option<String> {
 			g.suns = suns;
 		}
 		g.owned.remove(1-c);
+		None
 	}
-	None
+	else {err("no such card with that prefix!")}
 }
-
-pub fn err(s: &str) -> Option<String> {Some(s.to_string())}
 
 // potential inputs:
 // 1-3: take a pool

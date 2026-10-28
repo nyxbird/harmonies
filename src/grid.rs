@@ -149,23 +149,29 @@ impl Grid {
 			p.0 -= offs[c.loc].0;
 			p.1 -= offs[c.loc].1;
 		}
-		// try each possible rotation
-		for _ in 0..6 {
-			let dx2 = x*2+(y%2);
-			let Some(Hex{cube: false,..}) = self.get2x(y, dx2) else {continue};
-			let mut yum = true;
-			for &(p, h) in map.iter() {
-				let Some(at) = self.get2x(y+p.0, dx2+p.1) else {
-					yum = false; break;
-				};
-				if at.h != h.h || at.t != h.t {
-					yum = false; break;
+		// try each possible rotation (and reflection)
+		for _ in 0..2 {
+			for _ in 0..6 {
+				let dx2 = x*2+(y%2);
+				let Some(Hex{cube: false,..}) = self.get2x(y, dx2) else {continue};
+				let mut yum = true;
+				for &(p, h) in map.iter() {
+					let Some(at) = self.get2x(y+p.0, dx2+p.1) else {
+						yum = false; break;
+					};
+					if at.h != h.h || at.t != h.t {
+						yum = false; break;
+					}
+				}
+				if yum {return true}
+				// rotate
+				for (p, _) in map.iter_mut() {
+					*p = Self::rot(p.0, p.1);
 				}
 			}
-			if yum {return true}
-			// rotate
+			// reflect
 			for (p, _) in map.iter_mut() {
-				*p = Self::rot(p.0, p.1);
+				*p = (p.0, -p.1);
 			}
 		}
 		false
